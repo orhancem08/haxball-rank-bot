@@ -18,10 +18,16 @@ function sor(soru) {
     process.exit(1);
   }
 
-  const browser = await puppeteer.launch({
-    executablePath: "/usr/bin/chromium",
-    headless: false,
-    args: ["--no-sandbox", "--disable-features=WebRtcHideLocalIpsWithMdns"],
+const browser = await puppeteer.launch({
+    // Chrome'un yeri ve görünür olup olmayacağı ortam değişkeninden okunur.
+    // Arch'ta varsayılanlar geçerli, sunucuda komutla birlikte veriyoruz.
+    executablePath: process.env.CHROME_PATH || "/usr/bin/chromium",
+    headless: process.env.HEADLESS === "true",
+    args: [
+      "--no-sandbox",
+      "--disable-features=WebRtcHideLocalIpsWithMdns",
+      "--remote-debugging-port=9222", // captcha çıkarsa uzaktan bağlanabilmek için
+    ],
   });
 
   const page = await browser.newPage();
@@ -46,8 +52,14 @@ function sor(soru) {
       noPlayer: true,
       token: t,
     });
-    window.room.onRoomLink = (link) => console.log("Oda linki:", link);
+        window.room.onRoomLink = (link) => { window.odaLinki = link; console.log("Oda linki:", link); };
   }, token);
+
+  // 15 saniye içinde link gelmezse büyük ihtimalle captcha istiyordur
+  setTimeout(async () => {
+    const link = await page.evaluate(() => window.odaLinki);
+    if (!link) console.log("15 saniyedir link gelmedi, muhtemelen captcha istiyor. chrome://inspect ile bağlanıp çöz.");
+  }, 15000);
 
   // Olay isimleri: yeniden yüklemeden önce eski kuralları temizlemek için
   const OLAYLAR = [
