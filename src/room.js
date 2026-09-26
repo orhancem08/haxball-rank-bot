@@ -1,17 +1,8 @@
-const room = HBInit({
-  roomName: "Orhan'ın Rank Odası",
-  maxPlayers: 12,
-  public: false,        // test aşamasında gizli oda
-  noPlayer: true,       // host odada oyuncu olarak görünmesin
-  token: "window.HAXBALL_TOKEN"
-});
-
-// Oda linki hazır olunca konsola yaz
-room.onRoomLink = (link) => console.log("Oda linki:", link);
-
-// Biri girince karşıla
-room.onPlayerJoin = (player) => {
-  room.sendAnnouncement(`Hoş geldin ${player.name}! Komutlar için !help yaz.`, player.id, 0x00FF00, "bold");
+// Biri girince: veritabanından kaydını getir (yoksa oluşturulur) ve karşıla
+room.onPlayerJoin = async (player) => {
+  const veri = await window.dbGetPlayer(player.auth, player.name);
+  console.log("Veritabanından gelen:", JSON.stringify(veri));
+  room.sendAnnouncement(`Hoş geldin ${player.name}! XP: ${veri.xp}. Komutlar için !help yaz.`, player.id, 0x00FF00, "bold");
 };
 
 // Chat komutları
